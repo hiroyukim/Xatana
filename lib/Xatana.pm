@@ -3,7 +3,6 @@ use strict;
 use warnings;
 our $VERSION = '0.01';
 use base qw/Class::Accessor::Fast Class::Data::Inheritable/;
-__PACKAGE__->mk_accessors(qw/req config router env stash/);
 
 use Smart::Args;
 use URI;
@@ -14,9 +13,13 @@ use Xatena::Config;
 use Xatena::View::Factory;
 use Xatena::Exception;
 
-__PACKAGE__->mk_classdata($_) for qw/config_class request_class router_class view_factory_class/;
+__PACKAGE__->mk_accessors(qw/req env stash/);
 
-__PACKAGE__->config_class('Xatena::Config');
+__PACKAGE__->mk_classdata($_) for qw/
+    config_data request_class 
+    router_class view_factory_class
+/;
+
 __PACKAGE__->request_class('Xatena::Request');
 __PACKAGE__->router_class('Xatena::Router');
 __PACKAGE__->view_factory_class('Xatena::View::Factory');
@@ -26,7 +29,6 @@ sub new {
     my $env   = shift;
 
     my $self = bless {
-        config => $class->config_class->new,
         req    => $class->request_class->new($env),
         router => $class->router_class->new,
         env    => $env,
@@ -40,8 +42,8 @@ sub new {
 
 sub _init {
     my $self = shift;
-
-    if( my $router = $self->config->{router} ) {
+    
+    if( my $router = $self->config->get('router') ) {
         $self->router->connect(%{$_}) for @$router;
     }
     else {
